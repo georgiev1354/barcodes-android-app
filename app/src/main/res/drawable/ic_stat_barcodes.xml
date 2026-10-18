@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="54"
+    android:viewportHeight="54">
+    <!-- The launcher monochrome icon, cropped to its 50-unit content for the status bar. -->
+    <group
+        android:translateX="-27"
+        android:translateY="-27">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M39.50,40h0.75v6.5h-0.75zM41.75,40h1.50v6.5h-1.50zM44.00,40h0.75v6.5h-0.75zM46.25,40h1.50v6.5h-1.50zM50.00,40h1.50v6.5h-1.50zM52.25,40h1.50v6.5h-1.50zM54.50,40h1.50v6.5h-1.50zM56.75,40h1.50v6.5h-1.50zM59.00,40h0.75v6.5h-0.75zM62.00,40h1.50v6.5h-1.50zM65.00,40h1.50v6.5h-1.50zM68.00,40h0.50v6.5h-0.50zM39.50,50.5h1.50v6.5h-1.50zM41.75,50.5h1.50v6.5h-1.50zM44.75,50.5h1.50v6.5h-1.50zM47.00,50.5h0.75v6.5h-0.75zM49.25,50.5h1.50v6.5h-1.50zM51.50,50.5h2.25v6.5h-2.25zM54.50,50.5h0.75v6.5h-0.75zM56.75,50.5h1.50v6.5h-1.50zM59.00,50.5h0.75v6.5h-0.75zM60.50,50.5h2.25v6.5h-2.25zM63.50,50.5h0.75v6.5h-0.75zM65.75,50.5h0.75v6.5h-0.75zM68.00,50.5h0.50v6.5h-0.50zM39.50,61h1.50v6.5h-1.50zM42.50,61h0.75v6.5h-0.75zM44.00,61h0.75v6.5h-0.75zM45.50,61h2.25v6.5h-2.25zM50.00,61h1.50v6.5h-1.50zM53.75,61h0.75v6.5h-0.75zM55.25,61h0.75v6.5h-0.75zM56.75,61h1.50v6.5h-1.50zM60.50,61h1.50v6.5h-1.50zM62.75,61h1.50v6.5h-1.50zM65.00,61h2.25v6.5h-2.25z" />
+    <path
+        android:pathData="M29,40V34a5,5 0 0 1 5,-5H40 M68,29H74a5,5 0 0 1 5,5V40 M79,68V74a5,5 0 0 1 -5,5H68 M40,79H34a5,5 0 0 1 -5,-5V68"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    </group>
+</vector>

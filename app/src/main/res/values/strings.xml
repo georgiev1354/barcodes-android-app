@@ -1,0 +1,45 @@
+<resources>
+    <string name="app_name">Баркодове</string>
+
+    <string name="permission_rationale">За да разчита баркодове, приложението се нуждае от достъп до камерата.</string>
+    <string name="permission_grant">Разреши камерата</string>
+    <string name="permission_settings">Отвори настройките</string>
+
+    <string name="expected_auto">Авто</string>
+    <string name="expected_label">Брой:</string>
+    <string name="torch">Фенерче</string>
+    <string name="scan_hint">Насочете камерата към стикера и задръжте неподвижно</string>
+    <string name="scan_progress">Потвърдени: %1$d от %2$d засечени</string>
+    <string name="scan_restart">Отначало</string>
+
+    <string name="result_title">Разчетени баркодове</string>
+    <string name="result_image_description">Кадър от камерата с отбелязани баркодове</string>
+    <string name="copy">Копирай</string>
+    <string name="copy_all">Копирай всички</string>
+    <string name="copied">Копирано</string>
+    <string name="scan_again">Ново сканиране</string>
+
+    <string name="wifi_title">Wi‑Fi мрежа</string>
+    <string name="wifi_ssid">Мрежа</string>
+    <string name="wifi_password">Парола</string>
+    <string name="wifi_security">Защита</string>
+    <string name="wifi_open">Без парола</string>
+    <string name="wifi_hidden">Скрита мрежа</string>
+    <string name="wifi_hidden_yes">Да</string>
+    <string name="wifi_raw">Оригинал</string>
+
+    <string name="back">Назад</string>
+    <string name="settings_title">Настройки</string>
+    <string name="settings_formats">Какво да се сканира</string>
+    <string name="settings_formats_hint">Изберете само форматите, които има по стикерите. Колкото по-малко са, толкова по-бързо се разчита и по-малък е рискът избледнял код да бъде прочетен грешно.</string>
+    <string name="settings_format_weak">Слаба защита от грешно прочитане, включвайте само ако е нужно</string>
+    <string name="settings_formats_default">Върни по подразбиране (Code 128, EAN-13, QR)</string>
+    <string name="settings_result">Резултат</string>
+    <string name="settings_strip_labels">Премахвай етикети пред стойността</string>
+    <string name="settings_strip_labels_summary">„S/N: 2430011117002865“ → „2430011117002865“. Също SN:, P/N:, PN:.</string>
+    <string name="settings_readable_wifi">Показвай Wi‑Fi кодовете разчетени</string>
+    <string name="settings_readable_wifi_summary">Име на мрежата и парола поотделно, всяко за копиране. Оригиналът също остава за копиране.</string>
+    <string name="settings_app">Приложение</string>
+    <string name="settings_updates">Обновления</string>
+    <string name="settings_updates_summary">Версия, автоматично обновяване, проверка за нова версия</string>
+</resources>

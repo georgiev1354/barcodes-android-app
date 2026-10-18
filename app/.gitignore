@@ -1,0 +1,3 @@
+/build
+# Signed APKs and R8 mappings from Build > Generate Signed APK.
+/release

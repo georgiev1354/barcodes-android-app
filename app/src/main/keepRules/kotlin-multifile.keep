@@ -1,0 +1,7 @@
+# Kotlin stdlib facades like CollectionsKt are split into a chain of package-private classes
+# (CollectionsKt__IterablesKt <- CollectionsKt__MutableCollectionsJVMKt <- ...). With packageScope,
+# R8 repackaged some links of that chain but not others, so a subclass ended up outside the package
+# of its package-private superclass and the release build crashed on start with
+# "IllegalAccessError: Class kotlin.collections.h extended by class ru is inaccessible".
+# Keeping the names' package (members can still be shrunk, optimized and renamed) prevents that.
+-keep,allowshrinking,allowoptimization,allowobfuscation class kotlin.**Kt__*
