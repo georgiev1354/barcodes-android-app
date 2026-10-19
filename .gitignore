@@ -1,17 +1,62 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# --- Gradle / Kotlin build output ---
+.gradle/
+.kotlin/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+
+# --- Machine-specific config (SDK path, local overrides) ---
 local.properties
-.kotlin
-/.idea/deploymentTargetSelector.xml
+
+# --- Signing keys and their passwords (docs/play-store.md) ---
+*.jks
+*.keystore
+*.p12
+keystore.properties
+signing.properties
+
+# --- Android Studio / IntelliJ ---
+# Only settings that are identical on every machine are shared. Files such as
+# misc.xml (JDK name), gradle.xml (Gradle JVM), compiler.xml and workspace.xml
+# are regenerated on Gradle sync and differ per machine, so they stay local.
+*.iml
+*.iws
+*.ipr
+out/
+/.idea/*
+!/.idea/codeStyles/
+!/.idea/inspectionProfiles/
+!/.idea/runConfigurations/
+!/.idea/vcs.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+
+# --- Other editors ---
+.vscode/
+*.swp
+*~
+
+# --- Logs, heap dumps, profiler output ---
+*.log
+*.hprof
+
+# --- Python (scripts/) ---
+__pycache__/
+*.pyc
+.venv/
+
+# --- Node / web (also see web/.gitignore) ---
+node_modules/
+.env
+.env.*
+!.env.example
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini

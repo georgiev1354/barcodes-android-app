@@ -4,7 +4,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
+// PLAY-STORE: only the update notification permission request used Build.
+// import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -45,37 +46,41 @@ import com.gg.barcodes.ui.ResultScreen
 import com.gg.barcodes.ui.ScanScreen
 import com.gg.barcodes.ui.SettingsScreen
 import com.gg.barcodes.ui.theme.BarcodesTheme
-import com.gg.barcodes.update.UpdateBanner
-import com.gg.barcodes.update.UpdateDialog
-import com.gg.barcodes.update.Updater
+// PLAY-STORE: self-update is not allowed on Google Play (docs/play-store.md).
+// import com.gg.barcodes.update.UpdateBanner
+// import com.gg.barcodes.update.UpdateDialog
+// import com.gg.barcodes.update.Updater
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        Updater.init(
-            this,
-            checkUrl = BuildConfig.UPDATE_URL,
-            smallIcon = R.drawable.ic_stat_barcodes,
-            // Nothing is lost on a restart: a scan in progress is simply started again.
-            isBusy = { false },
-        )
+        // PLAY-STORE: self-update is not allowed on Google Play (docs/play-store.md).
+        // Updater.init(
+        //     this,
+        //     checkUrl = BuildConfig.UPDATE_URL,
+        //     smallIcon = R.drawable.ic_stat_barcodes,
+        //     // Nothing is lost on a restart: a scan in progress is simply started again.
+        //     isBusy = { false },
+        // )
 
         setContent {
             BarcodesTheme {
-                var showUpdates by remember { mutableStateOf(false) }
+                // PLAY-STORE: update banner and dialog removed (docs/play-store.md).
+                // var showUpdates by remember { mutableStateOf(false) }
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(Modifier.padding(innerPadding).fillMaxSize()) {
-                        UpdateBanner()
+                        // PLAY-STORE: UpdateBanner()
                         Box(Modifier.weight(1f)) {
                             CameraPermissionGate {
-                                BarcodesApp(onShowUpdates = { showUpdates = true })
+                                // PLAY-STORE: was BarcodesApp(onShowUpdates = { showUpdates = true })
+                                BarcodesApp(onShowUpdates = {})
                             }
                         }
                     }
                 }
-                if (showUpdates) UpdateDialog(onDismiss = { showUpdates = false })
+                // PLAY-STORE: if (showUpdates) UpdateDialog(onDismiss = { showUpdates = false })
             }
         }
     }
@@ -88,17 +93,18 @@ fun BarcodesApp(
     viewModel: ScanViewModel = viewModel(),
 ) {
     val result by viewModel.result.collectAsStateWithLifecycle()
-    // Asked after the camera, so the two system dialogs never overlap. Only the update notifications need it.
-    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
+    // PLAY-STORE: notifications were only for self-update, so the app no longer asks for them.
+    // // Asked after the camera, so the two system dialogs never overlap. Only the update notifications need it.
+    // val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    // val context = LocalContext.current
+    // LaunchedEffect(Unit) {
+    //     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+    //         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+    //         PackageManager.PERMISSION_GRANTED
+    //     ) {
+    //         notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    //     }
+    // }
     val haptics = LocalHapticFeedback.current
     LaunchedEffect(result) {
         if (result != null) haptics.performHapticFeedback(HapticFeedbackType.LongPress)

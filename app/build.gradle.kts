@@ -15,21 +15,23 @@ android {
         targetSdk = 37
         // Every release published to the update server needs a higher versionCode (docs/self-update.md).
         // -PversionCode=N overrides it, for testing updates between two local builds.
-        versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(4)
-        versionName = "3.1"
+        versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(5)
+        versionName = "3.2"
 
-        // One folder per package on the update server, so several apps (or variants) never mix.
-        buildConfigField("String", "UPDATE_URL", "\"https://apks.gg-webapp.com/$applicationId/check-update\"")
+        // PLAY-STORE: no update server on Google Play (docs/play-store.md).
+        // // One folder per package on the update server, so several apps (or variants) never mix.
+        // buildConfigField("String", "UPDATE_URL", "\"https://apks.gg-webapp.com/$applicationId/check-update\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
-        debug {
-            // A debug build is signed with the debug key and can't update from the release server.
-            // Pass -PupdateUrl=http://10.0.2.2:8000/<applicationId>/check-update to test against a local one.
-            buildConfigField("String", "UPDATE_URL", "\"${providers.gradleProperty("updateUrl").getOrElse("")}\"")
-        }
+        // PLAY-STORE: no update server on Google Play (docs/play-store.md).
+        // debug {
+        //     // A debug build is signed with the debug key and can't update from the release server.
+        //     // Pass -PupdateUrl=http://10.0.2.2:8000/<applicationId>/check-update to test against a local one.
+        //     buildConfigField("String", "UPDATE_URL", "\"${providers.gradleProperty("updateUrl").getOrElse("")}\"")
+        // }
 
         release {
             optimization {
@@ -46,6 +48,12 @@ android {
         compose = true
         buildConfig = true
     }
+}
+
+// PLAY-STORE: leaves the self-update code (update/ and its test) out of the build, so the Play
+// bundle has no code that installs APKs. The sources stay untouched (docs/play-store.md).
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    exclude("com/gg/barcodes/update/**")
 }
 
 dependencies {

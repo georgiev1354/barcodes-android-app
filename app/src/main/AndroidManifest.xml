@@ -6,12 +6,15 @@
         android:name="android.hardware.camera.any"
         android:required="true" />
 
+    <!-- PLAY-STORE: the permissions below were only for self-update, which Google Play doesn't
+         allow (docs/play-store.md). REQUEST_INSTALL_PACKAGES alone gets an app rejected.
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <!-- Android 12+: lets updates installed by this app (as installer of record) skip the confirmation. -->
+    Android 12+: lets updates installed by this app (as installer of record) skip the confirmation.
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
-    <!-- Android 13+: for the "update ready" / "updated" notifications; request it at runtime as usual. -->
+    Android 13+: for the "update ready" / "updated" notifications; request it at runtime as usual.
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    -->
     <uses-permission android:name="android.permission.CAMERA" />
 
     <application
@@ -36,6 +39,7 @@
             </intent-filter>
         </activity>
 
+        <!-- PLAY-STORE: self-update receivers (docs/play-store.md).
         <receiver
             android:name=".update.InstallResultReceiver"
             android:exported="false" />
@@ -47,6 +51,7 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+        -->
     </application>
 
 </manifest>

@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.gg.barcodes.BuildConfig
 import com.gg.barcodes.R
 import com.gg.barcodes.scan.ScanFormat
 
@@ -120,20 +121,29 @@ fun SettingsScreen(
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         item { SectionTitle(stringResource(R.string.settings_app)) }
+        // PLAY-STORE: the "Updates" entry is replaced by the version; Google Play does the updating
+        // (docs/play-store.md).
+        // item {
+        //     Column(
+        //         Modifier
+        //             .fillMaxWidth()
+        //             .clickable(onClick = onShowUpdates)
+        //             .padding(horizontal = 16.dp, vertical = 12.dp),
+        //     ) {
+        //         Text(stringResource(R.string.settings_updates), style = MaterialTheme.typography.bodyLarge)
+        //         Text(
+        //             stringResource(R.string.settings_updates_summary),
+        //             style = MaterialTheme.typography.bodySmall,
+        //             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        //         )
+        //     }
+        // }
         item {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onShowUpdates)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            ) {
-                Text(stringResource(R.string.settings_updates), style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    stringResource(R.string.settings_updates_summary),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
         }
     }
 }

@@ -42,4 +42,6 @@
     <string name="settings_app">Приложение</string>
     <string name="settings_updates">Обновления</string>
     <string name="settings_updates_summary">Версия, автоматично обновяване, проверка за нова версия</string>
+    <!-- PLAY-STORE: shown instead of the "Updates" entry (docs/play-store.md). -->
+    <string name="settings_version">Версия %1$s</string>
 </resources>

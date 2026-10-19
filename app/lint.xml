@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- PLAY-STORE: update/ is left out of the build for Google Play (docs/play-store.md), but lint
+         still reads it and flags notifications without POST_NOTIFICATIONS. Delete this file when
+         restoring self-update. -->
+    <issue id="all">
+        <ignore path="src/main/java/com/gg/barcodes/update/**" />
+        <ignore path="src/test/java/com/gg/barcodes/update/**" />
+    </issue>
+</lint>

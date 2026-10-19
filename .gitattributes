@@ -1,0 +1,24 @@
+# Store text with LF in the repo regardless of each machine's core.autocrlf.
+* text=auto eol=lf
+
+# Windows scripts need CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binaries: never touch line endings or try to merge.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.wasm binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
+
+# Lockfile: regenerate instead of hand-merging; keep diffs quiet.
+web/package-lock.json -diff merge=binary linguist-generated
