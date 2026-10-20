@@ -86,7 +86,7 @@ Play приема само **Android App Bundle** (`.aab`), подписан с 
 
 Без Android Studio: `./gradlew bundleRelease` дава неподписан `app/build/outputs/bundle/release/app-release.aab`, който се подписва с `jarsigner`.
 
-**versionCode** (`app/build.gradle.kts`, сега `5`) трябва да расте с всяко качване в Play. Play отказва вече използван код. `versionName` (`3.2`) е свободен текст, видим за потребителите.
+**versionCode** (`app/build.gradle.kts`, сега `6`) трябва да расте с всяко качване в Play. Play отказва вече използван код. `versionName` (`3.3`) е свободен текст, видим за потребителите.
 
 ### Ключ за подписване (важно решение)
 

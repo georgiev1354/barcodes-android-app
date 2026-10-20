@@ -10,7 +10,7 @@ import wasmUrl from "zxing-wasm/reader/zxing_reader.wasm?url";
 import type { ReaderOptions } from "zxing-wasm/reader";
 import type { Box, Detection } from "./consensus";
 import { enhance } from "./enhance";
-import { formatsById, labelFor, type ScanFormat } from "./formats";
+import { formatsById, isWeakCheck, labelFor, type ScanFormat } from "./formats";
 import type { DecoderKind, FromWorker, ToWorker } from "./protocol";
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -93,6 +93,7 @@ async function decodeNative(detector: BarcodeDetector, bitmap: ImageBitmap, enha
     .map<Detection>((b) => ({
       value: b.rawValue,
       format: labelFor(b.format),
+      weakCheck: isWeakCheck(b.format),
       box: { left: b.boundingBox.left, top: b.boundingBox.top, right: b.boundingBox.right, bottom: b.boundingBox.bottom },
     }));
 }
@@ -119,7 +120,12 @@ async function decodeZxing(bitmap: ImageBitmap, enhanced: boolean) {
   const results = await readBarcodes(image, options);
   return results
     .filter((r) => r.isValid && r.text)
-    .map<Detection>((r) => ({ value: r.text, format: labelFor(r.format), box: boundingBox(r.position) }));
+    .map<Detection>((r) => ({
+      value: r.text,
+      format: labelFor(r.format),
+      box: boundingBox(r.position),
+      weakCheck: isWeakCheck(r.format),
+    }));
 }
 
 function boundingBox(position: { topLeft: Point; topRight: Point; bottomLeft: Point; bottomRight: Point }): Box {

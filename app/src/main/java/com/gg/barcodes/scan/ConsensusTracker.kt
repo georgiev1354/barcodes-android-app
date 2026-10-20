@@ -17,13 +17,24 @@ data class Box(val left: Float, val top: Float, val right: Float, val bottom: Fl
         return if (union <= 0f) 0f else inter / union
     }
 
+    /** Share of this box's area that lies inside [other]. */
+    fun coveredBy(other: Box): Float {
+        val ix = maxOf(0f, minOf(right, other.right) - maxOf(left, other.left))
+        val iy = maxOf(0f, minOf(bottom, other.bottom) - maxOf(top, other.top))
+        val area = width * height
+        return if (area <= 0f) 0f else ix * iy / area
+    }
+
     /** True when [other]'s center lies within half a width/height of this box's center. */
     fun isNear(other: Box): Boolean =
         abs(centerX - other.centerX) < width / 2f && abs(centerY - other.centerY) < height / 2f
 }
 
-/** One barcode decoded in one camera frame. */
-data class Detection(val value: String, val format: String, val box: Box)
+/**
+ * One barcode decoded in one camera frame. [weakCheck] marks a format without a mandatory check
+ * digit (Code 39, Codabar, ITF), whose values the tracker accepts only on stricter terms.
+ */
+data class Detection(val value: String, val format: String, val box: Box, val weakCheck: Boolean = false)
 
 /** Public view of a physical barcode followed across frames. */
 data class TrackState(
@@ -53,10 +64,18 @@ data class FrameResult(
  * doesn't happen in practice. An occasional misread of a faded barcode only delays confirmation
  * by one frame, where a share-of-all-votes rule would stall until it is heavily outvoted.
  *
+ * A value of a format without a check digit needs a lead of [weakRequiredVotes] instead, since
+ * one wrongly read bar still decodes to a valid-looking value. Such values shorter than
+ * [minWeakLength] are dropped: they are what bar fragments and printed text decode as. So is
+ * such a value whose box covers most of two or more other barcodes: a slanted scan line through
+ * stacked barcodes, which mixes their characters into a valid-looking value.
+ *
  * Not thread-safe; call from a single thread.
  */
 class ConsensusTracker(
     private val requiredVotes: Int = 6,
+    private val weakRequiredVotes: Int = 10,
+    private val minWeakLength: Int = 3,
     /** Unconfirmed tracks unseen for this many frames are dropped as noise. */
     private val staleFrames: Int = 45,
     /** A track seen within this many frames counts as currently visible. */
@@ -67,6 +86,7 @@ class ConsensusTracker(
     private class Track(val id: Int, var box: Box, var lastSeen: Int) {
         val votes = LinkedHashMap<String, Int>()
         val formats = HashMap<String, String>()
+        val weakValues = HashSet<String>()
         var total = 0
 
         fun leader(): Map.Entry<String, Int> = votes.maxBy { it.value }
@@ -89,6 +109,7 @@ class ConsensusTracker(
         fun vote(detection: Detection, frame: Int) {
             votes.merge(detection.value, 1, Int::plus)
             formats[detection.value] = detection.format
+            if (detection.weakCheck) weakValues += detection.value
             total++
             box = detection.box
             lastSeen = frame
@@ -110,8 +131,11 @@ class ConsensusTracker(
         lastNewTrackFrame = 0
     }
 
-    fun onFrame(detections: List<Detection>): FrameResult {
+    fun onFrame(frameDetections: List<Detection>): FrameResult {
         frame++
+        val detections = frameDetections.filter { d ->
+            !d.weakCheck || (d.value.length >= minWeakLength && !isCrossRead(d, frameDetections))
+        }
         val seen = HashMap<Int, Box>()
         val matchedTracks = HashSet<Track>()
         val unmatched = assign(detections, matchedTracks) { track, detection ->
@@ -166,7 +190,13 @@ class ConsensusTracker(
         return detections.filter { it !in matchedDetections }
     }
 
-    private fun Track.isConfirmed(): Boolean = lead() >= requiredVotes
+    private fun isCrossRead(detection: Detection, frameDetections: List<Detection>): Boolean {
+        val others = tracks.map { it.box } + frameDetections.filter { it !== detection }.map { it.box }
+        return others.count { it.coveredBy(detection.box) >= 0.5f } >= 2
+    }
+
+    private fun Track.isConfirmed(): Boolean =
+        lead() >= if (leader().key in weakValues) weakRequiredVotes else requiredVotes
 
     /** An unconfirmed track that is visible now and not a one-off glitch. */
     private fun Track.isPending(): Boolean =

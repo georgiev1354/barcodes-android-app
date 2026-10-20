@@ -15,8 +15,8 @@ android {
         targetSdk = 37
         // Every release published to the update server needs a higher versionCode (docs/self-update.md).
         // -PversionCode=N overrides it, for testing updates between two local builds.
-        versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(5)
-        versionName = "3.2"
+        versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(6)
+        versionName = "3.3"
 
         // PLAY-STORE: no update server on Google Play (docs/play-store.md).
         // // One folder per package on the update server, so several apps (or variants) never mix.
@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.zxing.cpp)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

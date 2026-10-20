@@ -17,4 +17,23 @@ object BarcodeValue {
         if (stripLabels) value = value.replaceFirst(label, "")
         return value.takeIf { it.isNotBlank() }
     }
+
+    /**
+     * Applies what is known about the detection's format. An ITF value is digits in pairs, at
+     * least 6 of them: anything else is a misread (often a partial scan) and gives null. An
+     * ITF-14 whose GTIN check digit is valid counts as checked, so it confirms as fast as Code 128.
+     */
+    fun checkFormat(detection: Detection): Detection? {
+        if (detection.format != "ITF") return detection
+        val value = detection.value
+        if (value.length < 6 || value.length % 2 != 0 || !value.all { it in '0'..'9' }) return null
+        return if (value.length == 14 && hasValidGtinCheckDigit(value)) detection.copy(weakCheck = false) else detection
+    }
+
+    /** GS1 mod-10: weights 3, 1, 3, … from the digit left of the check digit. */
+    private fun hasValidGtinCheckDigit(digits: String): Boolean {
+        val body = digits.dropLast(1)
+        val sum = body.reversed().withIndex().sumOf { (i, c) -> (c - '0') * if (i % 2 == 0) 3 else 1 }
+        return (10 - sum % 10) % 10 == digits.last() - '0'
+    }
 }

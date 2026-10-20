@@ -34,8 +34,8 @@ export const S = {
   settingsFormats: "Какво да се сканира",
   settingsFormatsHint:
     "Изберете само форматите, които има по стикерите. Колкото по-малко са, толкова по-бързо се разчита и по-малък е рискът избледнял код да бъде прочетен грешно.",
-  settingsFormatWeak: "Слаба защита от грешно прочитане, включвайте само ако е нужно",
-  settingsFormatsDefault: "Върни по подразбиране (Code 128, EAN-13, QR)",
+  settingsFormatWeak: "Без контролна цифра: всеки код се потвърждава с повече еднакви прочитания",
+  settingsFormatsDefault: "Върни по подразбиране (Code 128, Code 39, ITF, EAN-13, QR)",
   settingsResult: "Резултат",
   settingsStripLabels: "Премахвай етикети пред стойността",
   settingsStripLabelsSummary: "„S/N: 2430011117002865“ → „2430011117002865“. Също SN:, P/N:, PN:.",

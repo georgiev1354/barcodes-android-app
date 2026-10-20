@@ -26,9 +26,15 @@ class ScanSettings(context: Context) {
         get() = prefs.getBoolean(KEY_READABLE_WIFI, true)
         set(value) = prefs.edit { putBoolean(KEY_READABLE_WIFI, value) }
 
+    /** Square camera frame instead of the full 3:4 one: a smaller area, fewer stray barcodes. */
+    var squareFrame: Boolean
+        get() = prefs.getBoolean(KEY_SQUARE_FRAME, false)
+        set(value) = prefs.edit { putBoolean(KEY_SQUARE_FRAME, value) }
+
     private companion object {
         const val KEY_FORMATS = "formats"
         const val KEY_STRIP_LABELS = "stripLabels"
         const val KEY_READABLE_WIFI = "readableWifi"
+        const val KEY_SQUARE_FRAME = "squareFrame"
     }
 }

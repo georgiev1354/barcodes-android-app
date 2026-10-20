@@ -32,8 +32,11 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_formats">Какво да се сканира</string>
     <string name="settings_formats_hint">Изберете само форматите, които има по стикерите. Колкото по-малко са, толкова по-бързо се разчита и по-малък е рискът избледнял код да бъде прочетен грешно.</string>
-    <string name="settings_format_weak">Слаба защита от грешно прочитане, включвайте само ако е нужно</string>
-    <string name="settings_formats_default">Върни по подразбиране (Code 128, EAN-13, QR)</string>
+    <string name="settings_format_weak">Без контролна цифра: всеки код се потвърждава с повече еднакви прочитания</string>
+    <string name="settings_formats_default">Върни по подразбиране (Code 128, Code 39, ITF, EAN-13, QR)</string>
+    <string name="settings_camera">Камера</string>
+    <string name="settings_square_frame">Квадратен кадър (1:1)</string>
+    <string name="settings_square_frame_summary">По-малка зона за сканиране. Изключено: кадър 3:4. Сканира се само видимото на екрана.</string>
     <string name="settings_result">Резултат</string>
     <string name="settings_strip_labels">Премахвай етикети пред стойността</string>
     <string name="settings_strip_labels_summary">„S/N: 2430011117002865“ → „2430011117002865“. Също SN:, P/N:, PN:.</string>

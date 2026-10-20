@@ -33,7 +33,7 @@ export function settingsScreen(session: ScanSession, decoder: DecoderKind | null
           "label",
           { className: "check-row" },
           box,
-          h("div", {}, h("div", {}, format.label), format.weakCheck && h("div", { className: "small error" }, S.settingsFormatWeak)),
+          h("div", {}, h("div", {}, format.label), format.weakCheck && h("div", { className: "small muted" }, S.settingsFormatWeak)),
         );
       }),
     );

@@ -1,5 +1,6 @@
 package com.gg.barcodes.ui
 
+import android.content.res.Configuration
 import android.util.Size
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ZoomState
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size as ComposeSize
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -66,17 +69,20 @@ fun ScanScreen(viewModel: ScanViewModel, onShowSettings: () -> Unit, modifier: M
     val lifecycleOwner = LocalLifecycleOwner.current
     val live by viewModel.live.collectAsStateWithLifecycle()
     val expectedCount by viewModel.expectedCount.collectAsStateWithLifecycle()
+    val squareFrame by viewModel.squareFrame.collectAsStateWithLifecycle()
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     var torchOn by rememberSaveable { mutableStateOf(false) }
     var zoomRatio by remember { mutableFloatStateOf(1f) }
     var maxZoomRatio by remember { mutableFloatStateOf(1f) }
 
     val controller = remember {
-        // Preview and analysis share the 16:9 aspect so analysis boxes map onto the preview.
+        // Preview and analysis share the 4:3 aspect so analysis boxes map onto the preview. 4:3 is
+        // the sensor's own shape: the whole field of view at the highest pixel count per bar.
         val selector = ResolutionSelector.Builder()
-            .setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+            .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
             .setResolutionStrategy(
                 ResolutionStrategy(
-                    Size(1920, 1080),
+                    Size(1920, 1440),
                     ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
                 )
             )
@@ -118,22 +124,18 @@ fun ScanScreen(viewModel: ScanViewModel, onShowSettings: () -> Unit, modifier: M
         onDispose { }
     }
 
-    Box(modifier.fillMaxSize()) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = {
-                PreviewView(it).apply {
-                    scaleType = PreviewView.ScaleType.FILL_CENTER
-                    this.controller = controller
-                }
-            },
-        )
-        TrackOverlay(live, Modifier.fillMaxSize())
+    // The preview has the analysed frame's shape, so what is on screen is exactly what is scanned.
+    val frameRatio = when {
+        squareFrame -> 1f
+        live.imageWidth > 0 && live.imageHeight > 0 -> live.imageWidth.toFloat() / live.imageHeight
+        landscape -> 4f / 3f
+        else -> 3f / 4f
+    }
 
+    Column(modifier.fillMaxSize().background(Color.Black)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.5f))
                 .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -159,11 +161,24 @@ fun ScanScreen(viewModel: ScanViewModel, onShowSettings: () -> Unit, modifier: M
             }
         }
 
+        Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Box(Modifier.aspectRatio(frameRatio)) {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = {
+                        PreviewView(it).apply {
+                            scaleType = PreviewView.ScaleType.FILL_CENTER
+                            this.controller = controller
+                        }
+                    },
+                )
+                TrackOverlay(live, Modifier.fillMaxSize())
+            }
+        }
+
         Column(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.5f))
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -221,7 +236,10 @@ private fun ZoomControls(
     }
 }
 
-/** Draws tracked barcodes over the FILL_CENTER preview: green when confirmed, amber while voting. */
+/**
+ * Draws tracked barcodes over the FILL_CENTER preview: green when confirmed, amber while voting.
+ * The preview box has the frame's aspect ratio, so this is a plain scale.
+ */
 @Composable
 private fun TrackOverlay(live: LiveScan, modifier: Modifier = Modifier) {
     Canvas(modifier) {

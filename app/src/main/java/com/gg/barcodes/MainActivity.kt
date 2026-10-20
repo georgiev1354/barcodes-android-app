@@ -114,6 +114,7 @@ fun BarcodesApp(
     val formats by viewModel.formats.collectAsStateWithLifecycle()
     val stripLabels by viewModel.stripLabels.collectAsStateWithLifecycle()
     val readableWifi by viewModel.readableWifi.collectAsStateWithLifecycle()
+    val squareFrame by viewModel.squareFrame.collectAsStateWithLifecycle()
 
     val current = result
     when {
@@ -126,6 +127,8 @@ fun BarcodesApp(
             onStripLabelsChange = viewModel::setStripLabels,
             readableWifi = readableWifi,
             onReadableWifiChange = viewModel::setReadableWifi,
+            squareFrame = squareFrame,
+            onSquareFrameChange = viewModel::setSquareFrame,
             onShowUpdates = onShowUpdates,
             onBack = { showSettings = false },
             modifier = modifier,

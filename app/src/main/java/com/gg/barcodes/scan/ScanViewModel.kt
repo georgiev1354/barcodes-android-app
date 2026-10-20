@@ -36,8 +36,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val _readableWifi = MutableStateFlow(settings.readableWifi)
     val readableWifi: StateFlow<Boolean> = _readableWifi.asStateFlow()
 
+    private val _squareFrame = MutableStateFlow(settings.squareFrame)
+    val squareFrame: StateFlow<Boolean> = _squareFrame.asStateFlow()
+
     val analyzerExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    val analyzer = BarcodeAnalyzer(_formats.value, ::onFrame)
+    val analyzer = BarcodeAnalyzer(_formats.value, _squareFrame.value, ::onFrame)
 
     private val tracker = ConsensusTracker()
 
@@ -88,6 +91,15 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         _readableWifi.value = on
     }
 
+    fun setSquareFrame(on: Boolean) {
+        if (on == _squareFrame.value) return
+        settings.squareFrame = on
+        _squareFrame.value = on
+        analyzer.squareFrame = on
+        // Boxes from the old frame shape are in different coordinates.
+        restart()
+    }
+
     fun restart() {
         resetRequested = true
         _result.value = null
@@ -107,7 +119,9 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         tracker.expectedCount = _expectedCount.value
         val stripLabels = _stripLabels.value
         val frame = tracker.onFrame(
-            detections.mapNotNull { d -> BarcodeValue.clean(d.value, stripLabels)?.let { d.copy(value = it) } }
+            detections.mapNotNull { d ->
+                BarcodeValue.clean(d.value, stripLabels)?.let { BarcodeValue.checkFormat(d.copy(value = it)) }
+            }
         )
 
         if (frame.seenInFrame.isNotEmpty() && frame.seenInFrame.size >= bestFrameBoxes.size) {

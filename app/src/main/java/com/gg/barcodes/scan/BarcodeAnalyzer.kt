@@ -9,10 +9,15 @@ import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import zxingcpp.BarcodeReader
 import kotlin.math.pow
 
 /**
- * Converts each camera frame to an upright bitmap and decodes every barcode in it.
+ * Converts each camera frame to an upright bitmap and decodes every barcode in it: ML Kit for most
+ * formats, ZXing-C++ for those without a check digit ([ScanFormat.zxing]).
+ *
+ * With [squareFrame] the bitmap is first cropped to its centered square, the same part of the
+ * frame the scan screen shows, so nothing outside the visible area is scanned.
  *
  * The same bitmap is decoded and handed to [onFrame], so detection boxes are in that bitmap's
  * pixel coordinates. Runs synchronously on the analyzer executor, which gives natural
@@ -24,14 +29,18 @@ import kotlin.math.pow
  */
 class BarcodeAnalyzer(
     formats: Set<ScanFormat>,
+    squareFrame: Boolean,
     private val onFrame: (bitmap: Bitmap, detections: List<Detection>) -> Unit,
 ) : ImageAnalysis.Analyzer {
 
     /** Set from any thread; the scanner is rebuilt on the next frame, not per frame. */
     @Volatile var formats: Set<ScanFormat> = formats
 
+    @Volatile var squareFrame: Boolean = squareFrame
+
     private var scannerFormats = formats
     private var scanner = createScanner(formats)
+    private val zxing = BarcodeReader()
 
     private var frameCount = 0
     private var pixels = IntArray(0)
@@ -39,30 +48,72 @@ class BarcodeAnalyzer(
     override fun analyze(image: ImageProxy) {
         val wanted = formats
         if (wanted != scannerFormats) {
-            scanner.close()
+            scanner?.close()
             scanner = createScanner(wanted)
             scannerFormats = wanted
         }
+        val square = squareFrame
         val bitmap = image.use { it.toBitmap().rotated(it.imageInfo.rotationDegrees) }
+            .let { if (square) it.centerSquare() else it }
         val input = if (frameCount++ % 2 == 1) enhanced(bitmap) else bitmap
-        val barcodes = try {
-            Tasks.await(scanner.process(InputImage.fromBitmap(input, 0)))
+        val detections = try {
+            decodeMlKit(input) + decodeZxing(input, wanted)
         } catch (_: Exception) {
             return
-        }
-        val detections = barcodes.mapNotNull { barcode ->
-            val value = barcode.rawValue?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-            val rect = barcode.boundingBox ?: return@mapNotNull null
-            Detection(
-                value = value,
-                format = ScanFormat.fromMlKit(barcode.format)?.label ?: "?",
-                box = Box(rect.left.toFloat(), rect.top.toFloat(), rect.right.toFloat(), rect.bottom.toFloat()),
-            )
         }
         onFrame(bitmap, detections)
     }
 
-    fun close() = scanner.close()
+    private fun decodeMlKit(input: Bitmap): List<Detection> {
+        val scanner = scanner ?: return emptyList()
+        val barcodes = Tasks.await(scanner.process(InputImage.fromBitmap(input, 0)))
+        return barcodes.mapNotNull { barcode ->
+            val value = barcode.rawValue?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            val rect = barcode.boundingBox ?: return@mapNotNull null
+            val format = ScanFormat.fromMlKit(barcode.format)
+            Detection(
+                value = value,
+                format = format?.label ?: "?",
+                box = Box(rect.left.toFloat(), rect.top.toFloat(), rect.right.toFloat(), rect.bottom.toFloat()),
+                weakCheck = format?.weakCheck ?: false,
+            )
+        }
+    }
+
+    private fun decodeZxing(input: Bitmap, formats: Set<ScanFormat>): List<Detection> {
+        val wanted = formats.mapNotNullTo(HashSet()) { it.zxing }
+        if (wanted.isEmpty()) return emptyList()
+        if (zxing.options.formats != wanted) {
+            zxing.options = BarcodeReader.Options(
+                formats = wanted,
+                tryHarder = true,
+                tryRotate = true,
+                tryInvert = false,
+                // Each extra scan line that must decode to the same value rules out more misreads.
+                minLineCount = ZxingMinLineCount,
+                maxNumberOfSymbols = 8,
+                // Raw content, like ML Kit's rawValue.
+                textMode = BarcodeReader.TextMode.PLAIN,
+            )
+        }
+        return zxing.read(input).mapNotNull { result ->
+            val value = result.text?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            val format = ScanFormat.fromZxing(result.format) ?: return@mapNotNull null
+            val p = result.position
+            val xs = listOf(p.topLeft.x, p.topRight.x, p.bottomRight.x, p.bottomLeft.x)
+            val ys = listOf(p.topLeft.y, p.topRight.y, p.bottomRight.y, p.bottomLeft.y)
+            Detection(
+                value = value,
+                format = format.label,
+                box = Box(xs.min().toFloat(), ys.min().toFloat(), xs.max().toFloat(), ys.max().toFloat()),
+                weakCheck = true,
+            )
+        }
+    }
+
+    fun close() {
+        scanner?.close()
+    }
 
     /**
      * Grayscale copy with the 1st–99th luminance percentiles stretched to full range, then
@@ -105,13 +156,21 @@ class BarcodeAnalyzer(
     }
 
     // Only the formats the user picked: each extra one is another way to misread a faded 1D code.
-    private fun createScanner(formats: Set<ScanFormat>): BarcodeScanner {
-        val codes = formats.map { it.mlKit }
+    // Null when ZXing handles all of them.
+    private fun createScanner(formats: Set<ScanFormat>): BarcodeScanner? {
+        val codes = formats.filter { it.zxing == null }.map { it.mlKit }
+        if (codes.isEmpty()) return null
         return BarcodeScanning.getClient(
             BarcodeScannerOptions.Builder()
                 .setBarcodeFormats(codes.first(), *codes.drop(1).toIntArray())
                 .build()
         )
+    }
+
+    private fun Bitmap.centerSquare(): Bitmap {
+        if (width == height) return this
+        val side = minOf(width, height)
+        return Bitmap.createBitmap(this, (width - side) / 2, (height - side) / 2, side, side)
     }
 
     private fun Bitmap.rotated(degrees: Int): Bitmap {
@@ -123,5 +182,7 @@ class BarcodeAnalyzer(
     private companion object {
         /** Above 1 darkens midtones: a faded bar at 60% gray maps to about 40%. */
         const val Gamma = 1.6
+
+        const val ZxingMinLineCount = 3
     }
 }

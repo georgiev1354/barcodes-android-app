@@ -37,4 +37,24 @@ class BarcodeValueTest {
         assertNull(BarcodeValue.clean("]C1", stripLabels = true))
         assertNull(BarcodeValue.clean("S/N: ", stripLabels = true))
     }
+
+    private fun itf(value: String) = Detection(value, "ITF", Box(0f, 0f, 1f, 1f), weakCheck = true)
+
+    @Test
+    fun dropsItfValuesItCannotCarry() {
+        listOf("1234", "12345", "12345A", "1234567").forEach { assertNull(it, BarcodeValue.checkFormat(itf(it))) }
+    }
+
+    @Test
+    fun itf14WithValidCheckDigitCountsAsChecked() {
+        assertEquals(false, BarcodeValue.checkFormat(itf("15400141288763"))?.weakCheck)
+        assertEquals(true, BarcodeValue.checkFormat(itf("15400141288764"))?.weakCheck)
+        assertEquals(true, BarcodeValue.checkFormat(itf("123456"))?.weakCheck)
+    }
+
+    @Test
+    fun otherFormatsPassUnchanged() {
+        val code39 = Detection("A1", "Code 39", Box(0f, 0f, 1f, 1f), weakCheck = true)
+        assertEquals(code39, BarcodeValue.checkFormat(code39))
+    }
 }

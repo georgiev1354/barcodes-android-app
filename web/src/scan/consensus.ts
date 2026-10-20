@@ -21,6 +21,14 @@ export function iou(a: Box, b: Box): number {
   return union <= 0 ? 0 : inter / union;
 }
 
+/** Share of [box]'s area that lies inside [other]. */
+export function coveredBy(box: Box, other: Box): number {
+  const ix = Math.max(0, Math.min(box.right, other.right) - Math.max(box.left, other.left));
+  const iy = Math.max(0, Math.min(box.bottom, other.bottom) - Math.max(box.top, other.top));
+  const area = width(box) * height(box);
+  return area <= 0 ? 0 : (ix * iy) / area;
+}
+
 /** True when [other]'s center lies within half a width/height of [box]'s center. */
 export function isNear(box: Box, other: Box): boolean {
   return (
@@ -29,11 +37,15 @@ export function isNear(box: Box, other: Box): boolean {
   );
 }
 
-/** One barcode decoded in one camera frame. */
+/**
+ * One barcode decoded in one camera frame. `weakCheck` marks a format without a mandatory check
+ * digit (Code 39, Codabar, ITF), whose values the tracker accepts only on stricter terms.
+ */
 export interface Detection {
   value: string;
   format: string;
   box: Box;
+  weakCheck?: boolean;
 }
 
 /** Public view of a physical barcode followed across frames. */
@@ -56,6 +68,10 @@ export interface FrameResult {
 
 export interface TrackerOptions {
   requiredVotes?: number;
+  /** Lead needed when the leading value is of a format without a check digit. */
+  weakRequiredVotes?: number;
+  /** Values of formats without a check digit shorter than this are dropped as noise. */
+  minWeakLength?: number;
   /** Unconfirmed tracks unseen for this many frames are dropped as noise. */
   staleFrames?: number;
   /** A track seen within this many frames counts as currently visible. */
@@ -68,6 +84,7 @@ class Track {
   // Insertion order matters: on a tie the first value seen leads, as with Kotlin's maxBy.
   readonly votes = new Map<string, number>();
   readonly formats = new Map<string, string>();
+  readonly weakValues = new Set<string>();
   total = 0;
 
   constructor(
@@ -100,6 +117,7 @@ class Track {
   vote(detection: Detection, frame: number) {
     this.votes.set(detection.value, (this.votes.get(detection.value) ?? 0) + 1);
     this.formats.set(detection.value, detection.format);
+    if (detection.weakCheck) this.weakValues.add(detection.value);
     this.total++;
     this.box = detection.box;
     this.lastSeen = frame;
@@ -112,10 +130,14 @@ class Track {
  * Every physical barcode on the sticker becomes a *track*, matched across frames by position
  * (and by value when the phone moves). Each frame casts one vote for the value decoded at that
  * track. A track is confirmed when its leading value is ahead of the runner-up by at least
- * `requiredVotes` votes. See ConsensusTracker.kt for the reasoning.
+ * `requiredVotes` votes (`weakRequiredVotes` for a format without a check digit, whose values
+ * shorter than `minWeakLength`, or whose box covers most of two or more other barcodes, are
+ * dropped). See ConsensusTracker.kt for the reasoning.
  */
 export class ConsensusTracker {
   private readonly requiredVotes: number;
+  private readonly weakRequiredVotes: number;
+  private readonly minWeakLength: number;
   private readonly staleFrames: number;
   private readonly activeFrames: number;
   private readonly settleFrames: number;
@@ -128,8 +150,17 @@ export class ConsensusTracker {
   private nextId = 0;
   private lastNewTrackFrame = 0;
 
-  constructor({ requiredVotes = 6, staleFrames = 45, activeFrames = 10, settleFrames = 20 }: TrackerOptions = {}) {
+  constructor({
+    requiredVotes = 6,
+    weakRequiredVotes = 10,
+    minWeakLength = 3,
+    staleFrames = 45,
+    activeFrames = 10,
+    settleFrames = 20,
+  }: TrackerOptions = {}) {
     this.requiredVotes = requiredVotes;
+    this.weakRequiredVotes = weakRequiredVotes;
+    this.minWeakLength = minWeakLength;
     this.staleFrames = staleFrames;
     this.activeFrames = activeFrames;
     this.settleFrames = settleFrames;
@@ -142,8 +173,11 @@ export class ConsensusTracker {
     this.lastNewTrackFrame = 0;
   }
 
-  onFrame(detections: Detection[]): FrameResult {
+  onFrame(frameDetections: Detection[]): FrameResult {
     const frame = ++this.frame;
+    const detections = frameDetections.filter(
+      (d) => !d.weakCheck || (d.value.length >= this.minWeakLength && !this.isCrossRead(d, frameDetections)),
+    );
     const seen = new Map<number, Box>();
     const unmatched = this.assign(detections, (track, detection) => {
       track.vote(detection, frame);
@@ -192,8 +226,17 @@ export class ConsensusTracker {
     return detections.filter((d) => !matchedDetections.has(d));
   }
 
+  private isCrossRead(detection: Detection, frameDetections: Detection[]): boolean {
+    const others = [
+      ...this.tracks.map((t) => t.box),
+      ...frameDetections.filter((d) => d !== detection).map((d) => d.box),
+    ];
+    return others.filter((b) => coveredBy(b, detection.box) >= 0.5).length >= 2;
+  }
+
   private isConfirmed(track: Track): boolean {
-    return track.lead() >= this.requiredVotes;
+    const required = track.weakValues.has(track.leader()[0]) ? this.weakRequiredVotes : this.requiredVotes;
+    return track.lead() >= required;
   }
 
   /** An unconfirmed track that is visible now and not a one-off glitch. */

@@ -12,6 +12,7 @@ class ConsensusTrackerTest {
     private val bottom = Box(100f, 180f, 500f, 240f)
 
     private fun det(value: String, box: Box) = Detection(value, "Code 128", box)
+    private fun code39(value: String, box: Box) = Detection(value, "Code 39", box, weakCheck = true)
 
     @Test
     fun confirmsAfterRequiredVotesAndCompletesWithExpectedCount() {
@@ -86,6 +87,32 @@ class ConsensusTrackerTest {
         tracker.onFrame(listOf(det("A", top.copy(top = 400f, bottom = 460f))))
         val result = tracker.onFrame(listOf(det("A", top)))
         assertTrue(result.tracks.single().confirmed)
+    }
+
+    @Test
+    fun formatWithoutCheckDigitNeedsLargerLead() {
+        val tracker = ConsensusTracker(requiredVotes = 3, weakRequiredVotes = 5).apply { expectedCount = 1 }
+        repeat(4) { assertFalse(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top))).complete) }
+        assertTrue(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top))).complete)
+    }
+
+    @Test
+    fun shortValuesOfFormatWithoutCheckDigitAreIgnored() {
+        val tracker = ConsensusTracker(requiredVotes = 3, weakRequiredVotes = 3, minWeakLength = 3)
+        repeat(5) { tracker.onFrame(listOf(code39("A1", top), det("A1", bottom))) }
+        val result = tracker.onFrame(listOf(code39("A1", top)))
+        assertEquals(listOf(bottom), result.tracks.map { it.box })
+    }
+
+    @Test
+    fun slantedReadAcrossStackedBarcodesIsIgnored() {
+        val tracker = ConsensusTracker(requiredVotes = 3, weakRequiredVotes = 3)
+        repeat(3) { tracker.onFrame(listOf(code39("88F7C7C4ADD8", top), code39("88F7C7C4ADD9", bottom))) }
+        val across = Box(110f, 90f, 510f, 250f)
+        repeat(3) { tracker.onFrame(listOf(code39("88F7C74ADD87", across))) }
+        val result = tracker.onFrame(listOf(code39("88F7C74ADD87", across), code39("88F7C7C4ADD8", top)))
+        assertEquals(listOf("88F7C7C4ADD8", "88F7C7C4ADD9"), result.tracks.map { it.value })
+        assertTrue(result.tracks.all { it.leaderVotes == it.totalVotes })
     }
 
     @Test

@@ -8,6 +8,7 @@ const top: Box = { left: 100, top: 100, right: 500, bottom: 160 };
 const bottom: Box = { left: 100, top: 180, right: 500, bottom: 240 };
 
 const det = (value: string, box: Box): Detection => ({ value, format: "Code 128", box });
+const code39 = (value: string, box: Box): Detection => ({ value, format: "Code 39", box, weakCheck: true });
 
 function tracker(options: ConstructorParameters<typeof ConsensusTracker>[0], expectedCount: number | null = null) {
   const t = new ConsensusTracker(options);
@@ -79,6 +80,29 @@ describe("ConsensusTracker", () => {
     const result = t.onFrame([det("A", top)]);
     expect(result.tracks).toHaveLength(1);
     expect(result.tracks[0].confirmed).toBe(true);
+  });
+
+  it("format without check digit needs a larger lead", () => {
+    const t = tracker({ requiredVotes: 3, weakRequiredVotes: 5 }, 1);
+    for (let i = 0; i < 4; i++) expect(t.onFrame([code39("88F7C7C4ADD8", top)]).complete).toBe(false);
+    expect(t.onFrame([code39("88F7C7C4ADD8", top)]).complete).toBe(true);
+  });
+
+  it("short values of a format without check digit are ignored", () => {
+    const t = tracker({ requiredVotes: 3, weakRequiredVotes: 3, minWeakLength: 3 });
+    for (let i = 0; i < 5; i++) t.onFrame([code39("A1", top), det("A1", bottom)]);
+    const result = t.onFrame([code39("A1", top)]);
+    expect(result.tracks.map((x) => x.box)).toEqual([bottom]);
+  });
+
+  it("slanted read across stacked barcodes is ignored", () => {
+    const t = tracker({ requiredVotes: 3, weakRequiredVotes: 3 });
+    for (let i = 0; i < 3; i++) t.onFrame([code39("88F7C7C4ADD8", top), code39("88F7C7C4ADD9", bottom)]);
+    const across: Box = { left: 110, top: 90, right: 510, bottom: 250 };
+    for (let i = 0; i < 3; i++) t.onFrame([code39("88F7C74ADD87", across)]);
+    const result = t.onFrame([code39("88F7C74ADD87", across), code39("88F7C7C4ADD8", top)]);
+    expect(result.tracks.map((x) => x.value)).toEqual(["88F7C7C4ADD8", "88F7C7C4ADD9"]);
+    expect(result.tracks.every((x) => x.leaderVotes === x.totalVotes)).toBe(true);
   });
 
   it("reading order is rows then columns", () => {

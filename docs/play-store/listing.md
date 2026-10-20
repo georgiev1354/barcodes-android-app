@@ -38,7 +38,7 @@ WI-FI QR КОДОВЕ
 
 НАСТРОЙКИ
 • Брой баркодове на стикера: 2, 3, 4 или автоматично
-• Формати: Code 128, EAN-13, QR (по подразбиране), както и EAN-8, UPC-A, UPC-E, Code 93, Code 39, Codabar, ITF, Data Matrix, PDF417, Aztec
+• Формати: Code 128, Code 39, ITF, EAN-13, QR (по подразбиране), както и EAN-8, UPC-A, UPC-E, Code 93, Codabar, Data Matrix, PDF417, Aztec
 • Увеличение (zoom) и фенерче за малки стикери и слабо осветление
 
 ПОВЕРИТЕЛНОСТ
@@ -81,7 +81,7 @@ Shows the network name, password and security type separately, each with its own
 
 SETTINGS
 • Number of barcodes on the sticker: 2, 3, 4 or automatic
-• Formats: Code 128, EAN-13, QR (default), plus EAN-8, UPC-A, UPC-E, Code 93, Code 39, Codabar, ITF, Data Matrix, PDF417, Aztec
+• Formats: Code 128, Code 39, ITF, EAN-13, QR (default), plus EAN-8, UPC-A, UPC-E, Code 93, Codabar, Data Matrix, PDF417, Aztec
 • Zoom and flashlight for small stickers and low light
 
 PRIVACY

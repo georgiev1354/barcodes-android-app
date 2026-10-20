@@ -4,7 +4,7 @@
 import { ConsensusTracker, sortedInReadingOrder, type Box, type TrackState } from "./consensus";
 import type { DecoderKind, FromWorker, ToWorker } from "./protocol";
 import * as settings from "./settings";
-import { cleanValue } from "./value";
+import { checkFormat, cleanValue } from "./value";
 
 export interface LiveScan {
   imageWidth: number;
@@ -150,7 +150,8 @@ export class ScanSession {
     const frame = this.tracker.onFrame(
       detections.flatMap((d) => {
         const value = cleanValue(d.value, this.stripLabels);
-        return value === null ? [] : [{ ...d, value }];
+        const checked = value === null ? null : checkFormat({ ...d, value });
+        return checked === null ? [] : [checked];
       }),
     );
 

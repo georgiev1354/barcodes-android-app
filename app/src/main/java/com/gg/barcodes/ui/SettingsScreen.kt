@@ -38,6 +38,8 @@ fun SettingsScreen(
     onStripLabelsChange: (Boolean) -> Unit,
     readableWifi: Boolean,
     onReadableWifiChange: (Boolean) -> Unit,
+    squareFrame: Boolean,
+    onSquareFrameChange: (Boolean) -> Unit,
     onShowUpdates: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -86,7 +88,7 @@ fun SettingsScreen(
                         Text(
                             stringResource(R.string.settings_format_weak),
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -98,6 +100,17 @@ fun SettingsScreen(
                     Text(stringResource(R.string.settings_formats_default))
                 }
             }
+        }
+
+        item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+        item { SectionTitle(stringResource(R.string.settings_camera)) }
+        item {
+            SwitchRow(
+                title = stringResource(R.string.settings_square_frame),
+                summary = stringResource(R.string.settings_square_frame_summary),
+                checked = squareFrame,
+                onCheckedChange = onSquareFrameChange,
+            )
         }
 
         item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
