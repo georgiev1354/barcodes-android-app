@@ -97,6 +97,31 @@ class ConsensusTrackerTest {
     }
 
     @Test
+    fun matchingPrintedTextLowersLeadNeededByFormatWithoutCheckDigit() {
+        val tracker = ConsensusTracker(requiredVotes = 3, weakRequiredVotes = 5).apply { expectedCount = 1 }
+        assertFalse(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top).copy(textConfirmed = true))).complete)
+        assertFalse(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top))).complete)
+        assertTrue(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top).copy(textConfirmed = true))).complete)
+    }
+
+    @Test
+    fun printedTextMatchingOneFrameOnlyKeepsLargerLead() {
+        val tracker = ConsensusTracker(requiredVotes = 3, weakRequiredVotes = 5).apply { expectedCount = 1 }
+        tracker.onFrame(listOf(code39("88F7C7C4ADD8", top).copy(textConfirmed = true)))
+        repeat(3) { assertFalse(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top))).complete) }
+        assertTrue(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top))).complete)
+    }
+
+    @Test
+    fun printedTextOfAnotherValueDoesNotHelpLeader() {
+        val tracker = ConsensusTracker(requiredVotes = 3, weakRequiredVotes = 5).apply { expectedCount = 1 }
+        repeat(2) { tracker.onFrame(listOf(code39("88F7C7C4ADD9", top).copy(textConfirmed = true))) }
+        // A lead of 3 would do for "…D8" if the other value's printed text counted; it needs 5: 7 to 2.
+        repeat(6) { assertFalse(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top))).complete) }
+        assertTrue(tracker.onFrame(listOf(code39("88F7C7C4ADD8", top))).complete)
+    }
+
+    @Test
     fun shortValuesOfFormatWithoutCheckDigitAreIgnored() {
         val tracker = ConsensusTracker(requiredVotes = 3, weakRequiredVotes = 3, minWeakLength = 3)
         repeat(5) { tracker.onFrame(listOf(code39("A1", top), det("A1", bottom))) }

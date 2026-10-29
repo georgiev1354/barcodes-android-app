@@ -40,6 +40,8 @@ fun SettingsScreen(
     onReadableWifiChange: (Boolean) -> Unit,
     squareFrame: Boolean,
     onSquareFrameChange: (Boolean) -> Unit,
+    readText: Boolean,
+    onReadTextChange: (Boolean) -> Unit,
     onShowUpdates: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -110,6 +112,14 @@ fun SettingsScreen(
                 summary = stringResource(R.string.settings_square_frame_summary),
                 checked = squareFrame,
                 onCheckedChange = onSquareFrameChange,
+            )
+        }
+        item {
+            SwitchRow(
+                title = stringResource(R.string.settings_read_text),
+                summary = stringResource(R.string.settings_read_text_summary),
+                checked = readText,
+                onCheckedChange = onReadTextChange,
             )
         }
 

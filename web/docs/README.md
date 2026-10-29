@@ -50,7 +50,7 @@ ui/*Screen.ts
 
 | Уеб | Android | Бележка |
 |---|---|---|
-| `src/scan/consensus.ts` | `scan/ConsensusTracker.kt` | 1:1, същите параметри (`requiredVotes = 6` и т.н.) |
+| `src/scan/consensus.ts` | `scan/ConsensusTracker.kt` | 1:1, същите параметри (`requiredVotes = 6` и т.н.). `textConfirmed` (проверка с отпечатания текст) се задава само в Android приложението |
 | `src/scan/value.ts` | `scan/BarcodeValue.kt` | 1:1 |
 | `src/scan/wifi.ts` | `scan/WifiCode.kt` | 1:1 |
 | `src/scan/formats.ts` | `scan/ScanFormat.kt` | + имена за ZXing и BarcodeDetector |

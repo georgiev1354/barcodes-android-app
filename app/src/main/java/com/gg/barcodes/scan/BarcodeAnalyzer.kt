@@ -9,6 +9,9 @@ import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.TextRecognizer
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import zxingcpp.BarcodeReader
 import kotlin.math.pow
 
@@ -26,10 +29,15 @@ import kotlin.math.pow
  * Every other frame is decoded from a contrast-enhanced grayscale copy instead (same size, so the
  * boxes still match the original). Faded or low-contrast print that ML Kit misses in the raw frame
  * often decodes there, so such a barcode keeps collecting votes.
+ *
+ * With [readText], a frame with a value of a format without a check digit also goes through ML
+ * Kit text recognition, and values that the text printed next to their barcode reads the same are
+ * marked [Detection.textConfirmed] (see [PrintedText]). Off, no text recognition runs at all.
  */
 class BarcodeAnalyzer(
     formats: Set<ScanFormat>,
     squareFrame: Boolean,
+    readText: Boolean,
     private val onFrame: (bitmap: Bitmap, detections: List<Detection>) -> Unit,
 ) : ImageAnalysis.Analyzer {
 
@@ -38,9 +46,12 @@ class BarcodeAnalyzer(
 
     @Volatile var squareFrame: Boolean = squareFrame
 
+    @Volatile var readText: Boolean = readText
+
     private var scannerFormats = formats
     private var scanner = createScanner(formats)
     private val zxing = BarcodeReader()
+    private var textRecognizer: TextRecognizer? = null
 
     private var frameCount = 0
     private var pixels = IntArray(0)
@@ -57,7 +68,8 @@ class BarcodeAnalyzer(
             .let { if (square) it.centerSquare() else it }
         val input = if (frameCount++ % 2 == 1) enhanced(bitmap) else bitmap
         val detections = try {
-            decodeMlKit(input) + decodeZxing(input, wanted)
+            val decoded = decodeMlKit(input) + decodeZxing(input, wanted)
+            if (readText && decoded.any { it.weakCheck }) checkPrintedText(bitmap, decoded) else decoded
         } catch (_: Exception) {
             return
         }
@@ -111,8 +123,25 @@ class BarcodeAnalyzer(
         }
     }
 
+    /** Marks weak values whose printed text matches; reads the original frame, not the enhanced one. */
+    private fun checkPrintedText(bitmap: Bitmap, detections: List<Detection>): List<Detection> {
+        val recognizer = textRecognizer
+            ?: TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).also { textRecognizer = it }
+        val text = Tasks.await(recognizer.process(InputImage.fromBitmap(bitmap, 0)))
+        val lines = text.textBlocks.flatMap { block ->
+            block.lines.mapNotNull { line ->
+                val rect = line.boundingBox ?: return@mapNotNull null
+                TextLine(line.text, Box(rect.left.toFloat(), rect.top.toFloat(), rect.right.toFloat(), rect.bottom.toFloat()))
+            }
+        }
+        return detections.map { d ->
+            if (d.weakCheck && PrintedText.matches(d, lines)) d.copy(textConfirmed = true) else d
+        }
+    }
+
     fun close() {
         scanner?.close()
+        textRecognizer?.close()
     }
 
     /**

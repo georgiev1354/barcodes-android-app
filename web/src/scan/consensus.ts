@@ -40,12 +40,14 @@ export function isNear(box: Box, other: Box): boolean {
 /**
  * One barcode decoded in one camera frame. `weakCheck` marks a format without a mandatory check
  * digit (Code 39, Codabar, ITF), whose values the tracker accepts only on stricter terms.
+ * `textConfirmed` marks a value that the text printed next to the barcode reads the same.
  */
 export interface Detection {
   value: string;
   format: string;
   box: Box;
   weakCheck?: boolean;
+  textConfirmed?: boolean;
 }
 
 /** Public view of a physical barcode followed across frames. */
@@ -72,6 +74,8 @@ export interface TrackerOptions {
   weakRequiredVotes?: number;
   /** Values of formats without a check digit shorter than this are dropped as noise. */
   minWeakLength?: number;
+  /** Frames whose printed text must match a weak value before it needs only `requiredVotes`. */
+  minTextVotes?: number;
   /** Unconfirmed tracks unseen for this many frames are dropped as noise. */
   staleFrames?: number;
   /** A track seen within this many frames counts as currently visible. */
@@ -85,6 +89,7 @@ class Track {
   readonly votes = new Map<string, number>();
   readonly formats = new Map<string, string>();
   readonly weakValues = new Set<string>();
+  readonly textVotes = new Map<string, number>();
   total = 0;
 
   constructor(
@@ -118,6 +123,7 @@ class Track {
     this.votes.set(detection.value, (this.votes.get(detection.value) ?? 0) + 1);
     this.formats.set(detection.value, detection.format);
     if (detection.weakCheck) this.weakValues.add(detection.value);
+    if (detection.textConfirmed) this.textVotes.set(detection.value, (this.textVotes.get(detection.value) ?? 0) + 1);
     this.total++;
     this.box = detection.box;
     this.lastSeen = frame;
@@ -132,12 +138,14 @@ class Track {
  * track. A track is confirmed when its leading value is ahead of the runner-up by at least
  * `requiredVotes` votes (`weakRequiredVotes` for a format without a check digit, whose values
  * shorter than `minWeakLength`, or whose box covers most of two or more other barcodes, are
- * dropped). See ConsensusTracker.kt for the reasoning.
+ * dropped, and which needs only `requiredVotes` once the printed text has matched it in
+ * `minTextVotes` frames). See ConsensusTracker.kt for the reasoning.
  */
 export class ConsensusTracker {
   private readonly requiredVotes: number;
   private readonly weakRequiredVotes: number;
   private readonly minWeakLength: number;
+  private readonly minTextVotes: number;
   private readonly staleFrames: number;
   private readonly activeFrames: number;
   private readonly settleFrames: number;
@@ -154,6 +162,7 @@ export class ConsensusTracker {
     requiredVotes = 6,
     weakRequiredVotes = 10,
     minWeakLength = 3,
+    minTextVotes = 2,
     staleFrames = 45,
     activeFrames = 10,
     settleFrames = 20,
@@ -161,6 +170,7 @@ export class ConsensusTracker {
     this.requiredVotes = requiredVotes;
     this.weakRequiredVotes = weakRequiredVotes;
     this.minWeakLength = minWeakLength;
+    this.minTextVotes = minTextVotes;
     this.staleFrames = staleFrames;
     this.activeFrames = activeFrames;
     this.settleFrames = settleFrames;
@@ -235,7 +245,9 @@ export class ConsensusTracker {
   }
 
   private isConfirmed(track: Track): boolean {
-    const required = track.weakValues.has(track.leader()[0]) ? this.weakRequiredVotes : this.requiredVotes;
+    const leader = track.leader()[0];
+    const weak = track.weakValues.has(leader) && (track.textVotes.get(leader) ?? 0) < this.minTextVotes;
+    const required = weak ? this.weakRequiredVotes : this.requiredVotes;
     return track.lead() >= required;
   }
 

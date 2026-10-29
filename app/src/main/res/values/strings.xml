@@ -37,6 +37,8 @@
     <string name="settings_camera">Камера</string>
     <string name="settings_square_frame">Квадратен кадър (1:1)</string>
     <string name="settings_square_frame_summary">По-малка зона за сканиране. Изключено: кадър 3:4. Сканира се само видимото на екрана.</string>
+    <string name="settings_read_text">Проверка с отпечатания текст</string>
+    <string name="settings_read_text_summary">За Code 39, ITF и Codabar: ако текстът под или над баркода съвпада с прочетената стойност, тя се потвърждава по-бързо. Сканирането на тези кодове е малко по-бавно.</string>
     <string name="settings_result">Резултат</string>
     <string name="settings_strip_labels">Премахвай етикети пред стойността</string>
     <string name="settings_strip_labels_summary">„S/N: 2430011117002865“ → „2430011117002865“. Също SN:, P/N:, PN:.</string>

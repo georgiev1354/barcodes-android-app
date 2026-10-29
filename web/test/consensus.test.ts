@@ -88,6 +88,28 @@ describe("ConsensusTracker", () => {
     expect(t.onFrame([code39("88F7C7C4ADD8", top)]).complete).toBe(true);
   });
 
+  it("matching printed text lowers the lead needed by a format without check digit", () => {
+    const t = tracker({ requiredVotes: 3, weakRequiredVotes: 5 }, 1);
+    expect(t.onFrame([{ ...code39("88F7C7C4ADD8", top), textConfirmed: true }]).complete).toBe(false);
+    expect(t.onFrame([code39("88F7C7C4ADD8", top)]).complete).toBe(false);
+    expect(t.onFrame([{ ...code39("88F7C7C4ADD8", top), textConfirmed: true }]).complete).toBe(true);
+  });
+
+  it("printed text matching one frame only keeps the larger lead", () => {
+    const t = tracker({ requiredVotes: 3, weakRequiredVotes: 5 }, 1);
+    t.onFrame([{ ...code39("88F7C7C4ADD8", top), textConfirmed: true }]);
+    for (let i = 0; i < 3; i++) expect(t.onFrame([code39("88F7C7C4ADD8", top)]).complete).toBe(false);
+    expect(t.onFrame([code39("88F7C7C4ADD8", top)]).complete).toBe(true);
+  });
+
+  it("printed text of another value does not help the leader", () => {
+    const t = tracker({ requiredVotes: 3, weakRequiredVotes: 5 }, 1);
+    for (let i = 0; i < 2; i++) t.onFrame([{ ...code39("88F7C7C4ADD9", top), textConfirmed: true }]);
+    // A lead of 3 would do for "…D8" if the other value's printed text counted; it needs 5: 7 to 2.
+    for (let i = 0; i < 6; i++) expect(t.onFrame([code39("88F7C7C4ADD8", top)]).complete).toBe(false);
+    expect(t.onFrame([code39("88F7C7C4ADD8", top)]).complete).toBe(true);
+  });
+
   it("short values of a format without check digit are ignored", () => {
     const t = tracker({ requiredVotes: 3, weakRequiredVotes: 3, minWeakLength: 3 });
     for (let i = 0; i < 5; i++) t.onFrame([code39("A1", top), det("A1", bottom)]);

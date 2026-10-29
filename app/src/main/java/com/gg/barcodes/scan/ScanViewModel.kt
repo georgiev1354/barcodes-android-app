@@ -39,8 +39,11 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
     private val _squareFrame = MutableStateFlow(settings.squareFrame)
     val squareFrame: StateFlow<Boolean> = _squareFrame.asStateFlow()
 
+    private val _readText = MutableStateFlow(settings.readText)
+    val readText: StateFlow<Boolean> = _readText.asStateFlow()
+
     val analyzerExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    val analyzer = BarcodeAnalyzer(_formats.value, _squareFrame.value, ::onFrame)
+    val analyzer = BarcodeAnalyzer(_formats.value, _squareFrame.value, _readText.value, ::onFrame)
 
     private val tracker = ConsensusTracker()
 
@@ -97,6 +100,15 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
         _squareFrame.value = on
         analyzer.squareFrame = on
         // Boxes from the old frame shape are in different coordinates.
+        restart()
+    }
+
+    fun setReadText(on: Boolean) {
+        if (on == _readText.value) return
+        settings.readText = on
+        _readText.value = on
+        analyzer.readText = on
+        // Votes collected under the other rule shouldn't count towards the next result.
         restart()
     }
 

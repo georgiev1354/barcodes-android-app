@@ -33,8 +33,15 @@ data class Box(val left: Float, val top: Float, val right: Float, val bottom: Fl
 /**
  * One barcode decoded in one camera frame. [weakCheck] marks a format without a mandatory check
  * digit (Code 39, Codabar, ITF), whose values the tracker accepts only on stricter terms.
+ * [textConfirmed] marks a value that the text printed next to the barcode reads the same.
  */
-data class Detection(val value: String, val format: String, val box: Box, val weakCheck: Boolean = false)
+data class Detection(
+    val value: String,
+    val format: String,
+    val box: Box,
+    val weakCheck: Boolean = false,
+    val textConfirmed: Boolean = false,
+)
 
 /** Public view of a physical barcode followed across frames. */
 data class TrackState(
@@ -68,7 +75,9 @@ data class FrameResult(
  * one wrongly read bar still decodes to a valid-looking value. Such values shorter than
  * [minWeakLength] are dropped: they are what bar fragments and printed text decode as. So is
  * such a value whose box covers most of two or more other barcodes: a slanted scan line through
- * stacked barcodes, which mixes their characters into a valid-looking value.
+ * stacked barcodes, which mixes their characters into a valid-looking value. Once the printed
+ * text next to the barcode has matched the value in [minTextVotes] frames, an independent check
+ * from a different source, the value needs only the normal lead of [requiredVotes].
  *
  * Not thread-safe; call from a single thread.
  */
@@ -76,6 +85,8 @@ class ConsensusTracker(
     private val requiredVotes: Int = 6,
     private val weakRequiredVotes: Int = 10,
     private val minWeakLength: Int = 3,
+    /** Frames whose printed text must match a weak value before it needs only [requiredVotes]. */
+    private val minTextVotes: Int = 2,
     /** Unconfirmed tracks unseen for this many frames are dropped as noise. */
     private val staleFrames: Int = 45,
     /** A track seen within this many frames counts as currently visible. */
@@ -87,6 +98,7 @@ class ConsensusTracker(
         val votes = LinkedHashMap<String, Int>()
         val formats = HashMap<String, String>()
         val weakValues = HashSet<String>()
+        val textVotes = HashMap<String, Int>()
         var total = 0
 
         fun leader(): Map.Entry<String, Int> = votes.maxBy { it.value }
@@ -110,6 +122,7 @@ class ConsensusTracker(
             votes.merge(detection.value, 1, Int::plus)
             formats[detection.value] = detection.format
             if (detection.weakCheck) weakValues += detection.value
+            if (detection.textConfirmed) textVotes.merge(detection.value, 1, Int::plus)
             total++
             box = detection.box
             lastSeen = frame
@@ -195,8 +208,11 @@ class ConsensusTracker(
         return others.count { it.coveredBy(detection.box) >= 0.5f } >= 2
     }
 
-    private fun Track.isConfirmed(): Boolean =
-        lead() >= if (leader().key in weakValues) weakRequiredVotes else requiredVotes
+    private fun Track.isConfirmed(): Boolean {
+        val leader = leader().key
+        val weak = leader in weakValues && (textVotes[leader] ?: 0) < minTextVotes
+        return lead() >= if (weak) weakRequiredVotes else requiredVotes
+    }
 
     /** An unconfirmed track that is visible now and not a one-off glitch. */
     private fun Track.isPending(): Boolean =

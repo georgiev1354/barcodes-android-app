@@ -31,10 +31,16 @@ class ScanSettings(context: Context) {
         get() = prefs.getBoolean(KEY_SQUARE_FRAME, false)
         set(value) = prefs.edit { putBoolean(KEY_SQUARE_FRAME, value) }
 
+    /** Check values without a check digit against the text printed next to the barcode. */
+    var readText: Boolean
+        get() = prefs.getBoolean(KEY_READ_TEXT, false)
+        set(value) = prefs.edit { putBoolean(KEY_READ_TEXT, value) }
+
     private companion object {
         const val KEY_FORMATS = "formats"
         const val KEY_STRIP_LABELS = "stripLabels"
         const val KEY_READABLE_WIFI = "readableWifi"
         const val KEY_SQUARE_FRAME = "squareFrame"
+        const val KEY_READ_TEXT = "readText"
     }
 }
