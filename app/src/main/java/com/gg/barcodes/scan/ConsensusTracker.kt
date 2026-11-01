@@ -93,6 +93,8 @@ class ConsensusTracker(
     private val activeFrames: Int = 10,
     /** In auto mode, no new track may appear for this many frames before finishing. */
     private val settleFrames: Int = 20,
+    /** In auto mode, scanning finishes as soon as this many barcodes are confirmed. */
+    private val maxCount: Int = 4,
 ) {
     private class Track(val id: Int, var box: Box, var lastSeen: Int) {
         val votes = LinkedHashMap<String, Int>()
@@ -131,6 +133,9 @@ class ConsensusTracker(
 
     /** Number of barcodes expected on the sticker, or null to finish when the scene settles. */
     var expectedCount: Int? = null
+
+    /** Most barcodes a result may list: the expected count, or [maxCount] in auto mode. */
+    val resultLimit: Int get() = expectedCount ?: maxCount
 
     private val tracks = mutableListOf<Track>()
     private var frame = 0
@@ -220,8 +225,10 @@ class ConsensusTracker(
 
     private fun isComplete(): Boolean {
         val confirmed = tracks.count { it.isConfirmed() }
-        if (confirmed == 0 || tracks.any { it.isPending() }) return false
         val expected = expectedCount
+        // Auto mode never lists more than maxCount, so a further barcode in view doesn't matter.
+        if (expected == null && confirmed >= maxCount) return true
+        if (confirmed == 0 || tracks.any { it.isPending() }) return false
         return if (expected != null) {
             confirmed >= expected
         } else {

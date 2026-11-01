@@ -82,6 +82,8 @@ export interface TrackerOptions {
   activeFrames?: number;
   /** In auto mode, no new track may appear for this many frames before finishing. */
   settleFrames?: number;
+  /** In auto mode, scanning finishes as soon as this many barcodes are confirmed. */
+  maxCount?: number;
 }
 
 class Track {
@@ -149,9 +151,15 @@ export class ConsensusTracker {
   private readonly staleFrames: number;
   private readonly activeFrames: number;
   private readonly settleFrames: number;
+  private readonly maxCount: number;
 
   /** Number of barcodes expected on the sticker, or null to finish when the scene settles. */
   expectedCount: number | null = null;
+
+  /** Most barcodes a result may list: the expected count, or `maxCount` in auto mode. */
+  get resultLimit(): number {
+    return this.expectedCount ?? this.maxCount;
+  }
 
   private tracks: Track[] = [];
   private frame = 0;
@@ -166,6 +174,7 @@ export class ConsensusTracker {
     staleFrames = 45,
     activeFrames = 10,
     settleFrames = 20,
+    maxCount = 4,
   }: TrackerOptions = {}) {
     this.requiredVotes = requiredVotes;
     this.weakRequiredVotes = weakRequiredVotes;
@@ -174,6 +183,7 @@ export class ConsensusTracker {
     this.staleFrames = staleFrames;
     this.activeFrames = activeFrames;
     this.settleFrames = settleFrames;
+    this.maxCount = maxCount;
   }
 
   reset() {
@@ -258,6 +268,8 @@ export class ConsensusTracker {
 
   private isComplete(): boolean {
     const confirmed = this.tracks.filter((t) => this.isConfirmed(t)).length;
+    // Auto mode never lists more than maxCount, so a further barcode in view doesn't matter.
+    if (this.expectedCount === null && confirmed >= this.maxCount) return true;
     if (confirmed === 0 || this.tracks.some((t) => this.isPending(t))) return false;
     return this.expectedCount !== null
       ? confirmed >= this.expectedCount

@@ -166,15 +166,20 @@ export class ScanSession {
 
     if (frame.complete) {
       this.finished = true;
-      this.onResult(this.buildResult(frame.tracks));
+      this.onResult(this.buildResult(frame.tracks, this.tracker.resultLimit));
     } else {
       this.pump();
     }
   }
 
-  private buildResult(tracks: TrackState[]): ScanResult {
+  /** Lists at most `limit` confirmed barcodes, the most often read ones. */
+  private buildResult(tracks: TrackState[], limit: number): ScanResult {
     const confirmed = sortedInReadingOrder(
-      tracks.filter((t) => t.confirmed).map((t) => ({ ...t, box: this.bestFrameBoxes.get(t.id) ?? t.box })),
+      tracks
+        .filter((t) => t.confirmed)
+        .sort((a, b) => b.leaderVotes - a.leaderVotes)
+        .slice(0, limit)
+        .map((t) => ({ ...t, box: this.bestFrameBoxes.get(t.id) ?? t.box })),
       (t) => t.box,
     );
     const image = annotate(this.bestFrame!, confirmed);

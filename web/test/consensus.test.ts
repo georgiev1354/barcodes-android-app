@@ -72,6 +72,17 @@ describe("ConsensusTracker", () => {
     expect(t.onFrame([det("A", top)]).complete).toBe(true);
   });
 
+  it("auto mode completes at max count despite a further barcode", () => {
+    const t = tracker({ requiredVotes: 3, settleFrames: 50, maxCount: 4 });
+    const row = (i: number): Box => ({ left: 100, top: 100 + 80 * i, right: 500, bottom: 160 + 80 * i });
+    const frame = (n: number) => [...["A", "B", "C", "D"].map((v, i) => det(v, row(i))), det(`E${n}`, row(4))];
+    for (let i = 0; i < 2; i++) expect(t.onFrame(frame(i)).complete).toBe(false);
+    expect(t.onFrame(frame(2)).complete).toBe(true);
+    expect(t.resultLimit).toBe(4);
+    t.expectedCount = 1;
+    expect(t.resultLimit).toBe(1);
+  });
+
   it("follows a barcode when the phone moves", () => {
     const t = tracker({ requiredVotes: 4 });
     t.onFrame([det("A", top)]);

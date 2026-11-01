@@ -80,6 +80,18 @@ class ConsensusTrackerTest {
     }
 
     @Test
+    fun autoModeCompletesAtMaxCountDespiteFurtherBarcode() {
+        val tracker = ConsensusTracker(requiredVotes = 3, settleFrames = 50, maxCount = 4)
+        fun row(i: Int) = Box(100f, 100f + 80f * i, 500f, 160f + 80f * i)
+        fun frame(n: Int) = listOf("A", "B", "C", "D").mapIndexed { i, v -> det(v, row(i)) } + det("E$n", row(4))
+        repeat(2) { assertFalse(tracker.onFrame(frame(it)).complete) }
+        assertTrue(tracker.onFrame(frame(2)).complete)
+        assertEquals(4, tracker.resultLimit)
+        tracker.expectedCount = 1
+        assertEquals(1, tracker.resultLimit)
+    }
+
+    @Test
     fun followsBarcodeWhenPhoneMoves() {
         val tracker = ConsensusTracker(requiredVotes = 4)
         tracker.onFrame(listOf(det("A", top)))

@@ -38,13 +38,28 @@ class PrintedTextTest {
 
     @Test
     fun dashesAreDroppedOnlyWhenValueHasNone() {
-        assertTrue(PrintedText.matches(code39("AB12CD"), listOf(line("AB-12-CD", under))))
-        assertTrue(PrintedText.matches(code39("AB-12"), listOf(line("AB-12", under))))
+        assertTrue(PrintedText.matches(code39("AB123CD"), listOf(line("AB-123-CD", under))))
+        assertTrue(PrintedText.matches(code39("AB-123"), listOf(line("AB-123", under))))
     }
 
     @Test
-    fun digitLookalikesAreReplacedOnlyForAllDigitValues() {
+    fun digitLookalikesAreReadAsDigits() {
         assertTrue(PrintedText.matches(code39("1020"), listOf(line("I02O", under))))
-        assertFalse(PrintedText.matches(code39("1O2O"), listOf(line("1020", under))))
+        assertFalse(PrintedText.matches(code39("1020"), listOf(line("I03O", under))))
+    }
+
+    @Test
+    fun latinLettersAreIgnored() {
+        assertTrue(PrintedText.matches(code39("12345678"), listOf(line("1234AB5678", under))))
+        assertTrue(PrintedText.matches(code39("12345678"), listOf(line("LOT12345678X", under))))
+        assertTrue(PrintedText.matches(code39("A12345678"), listOf(line("12345678", under))))
+        assertFalse(PrintedText.matches(code39("12345678"), listOf(line("912345678", under))))
+        assertFalse(PrintedText.matches(code39("12345678"), listOf(line("1234AB5679", under))))
+    }
+
+    @Test
+    fun valueWithTooFewNonLetterCharactersNeverMatches() {
+        assertFalse(PrintedText.matches(code39("ABCDEF"), listOf(line("ABCDEF", under))))
+        assertFalse(PrintedText.matches(code39("AB12"), listOf(line("AB12", under))))
     }
 }

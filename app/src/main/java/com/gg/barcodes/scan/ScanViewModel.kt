@@ -144,13 +144,16 @@ class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
         if (frame.complete) {
             finished = true
-            _result.value = buildResult(frame.tracks)
+            _result.value = buildResult(frame.tracks, tracker.resultLimit)
         }
     }
 
-    private fun buildResult(tracks: List<TrackState>): ScanResult {
+    /** Lists at most [limit] confirmed barcodes, the most often read ones. */
+    private fun buildResult(tracks: List<TrackState>, limit: Int): ScanResult {
         val confirmed = tracks
             .filter { it.confirmed }
+            .sortedByDescending { it.leaderVotes }
+            .take(limit)
             .map { it.copy(box = bestFrameBoxes[it.id] ?: it.box) }
             .sortedInReadingOrder { it.box }
         val image = annotate(bestFrame!!, confirmed)

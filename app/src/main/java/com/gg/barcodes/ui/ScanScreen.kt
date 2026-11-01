@@ -141,7 +141,7 @@ fun ScanScreen(viewModel: ScanViewModel, onShowSettings: () -> Unit, modifier: M
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(stringResource(R.string.expected_label), color = Color.White)
-            listOf<Int?>(null, 2, 3, 4).forEach { count ->
+            listOf<Int?>(null, 1).forEach { count ->
                 FilterChip(
                     selected = expectedCount == count,
                     onClick = { viewModel.setExpectedCount(count) },

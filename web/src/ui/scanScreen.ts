@@ -26,7 +26,7 @@ export function scanScreen(session: ScanSession, camera: Camera, onShowSettings:
   let live: LiveScan = { imageWidth: 0, imageHeight: 0, tracks: [], decoder: null };
 
   // Top bar: expected count, settings, torch.
-  const countChips = ([null, 2, 3, 4] as (number | null)[]).map((count) => {
+  const countChips = ([null, 1] as (number | null)[]).map((count) => {
     const chip = h("button", { className: "chip", type: "button" }, count?.toString() ?? S.expectedAuto);
     chip.onclick = () => {
       session.expectedCount = count;

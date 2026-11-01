@@ -15,8 +15,8 @@ android {
         targetSdk = 37
         // Every release published to the update server needs a higher versionCode (docs/self-update.md).
         // -PversionCode=N overrides it, for testing updates between two local builds.
-        versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(8)
-        versionName = "4.3"
+        versionCode = providers.gradleProperty("versionCode").map(String::toInt).getOrElse(9)
+        versionName = "4.4"
 
         // PLAY-STORE: no update server on Google Play (docs/play-store.md).
         // // One folder per package on the update server, so several apps (or variants) never mix.

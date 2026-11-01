@@ -13,12 +13,25 @@ data class TextLine(val text: String, val box: Box)
  */
 object PrintedText {
 
-    /** Characters text recognition confuses with digits; only used for all-digit values. */
+    /** Characters text recognition confuses with digits. */
     private val digitLookalikes = mapOf('O' to '0', 'o' to '0', 'I' to '1', 'l' to '1')
 
-    /** True when a line just above or below [detection]'s box reads the same value. */
-    fun matches(detection: Detection, lines: List<TextLine>): Boolean =
-        lines.any { isBeside(it.box, detection.box) && contains(normalize(it.text, detection.value), detection.value) }
+    /** Fewer characters than this left once letters are ignored is too little to confirm a value. */
+    private const val MinCompared = 3
+
+    /**
+     * True when a line just above or below [detection]'s box reads the same value. Latin letters
+     * are ignored on both sides: some stickers print letters in or around the number.
+     */
+    fun matches(detection: Detection, lines: List<TextLine>): Boolean {
+        val value = stripLetters(detection.value)
+        if (value.length < MinCompared) return false
+        return lines.any { line ->
+            isBeside(line.box, detection.box) &&
+                (contains(normalize(line.text, detection.value, lookalikes = false), value) ||
+                    contains(normalize(line.text, detection.value, lookalikes = true), value))
+        }
+    }
 
     /**
      * The line lies mostly within the barcode's horizontal extent, and above or below it within
@@ -33,24 +46,29 @@ object PrintedText {
     }
 
     /**
-     * Drops spaces and the `*` start/stop characters printed around Code 39 text, and dashes the
-     * value itself doesn't have. For an all-digit value, letters that look like digits become
-     * those digits.
+     * Drops spaces, the `*` start/stop characters printed around Code 39 text, dashes the value
+     * itself doesn't have, and Latin letters. With [lookalikes], letters that look like digits
+     * become those digits instead of being dropped (both variants are tried, so a label such as
+     * `LOT` doesn't turn into digits).
      */
-    internal fun normalize(text: String, value: String): String {
-        val digits = value.all { it.isDigit() }
+    internal fun normalize(text: String, value: String, lookalikes: Boolean): String {
         val keepDash = '-' in value
         return buildString {
             for (c in text) {
                 when {
                     c.isWhitespace() -> {}
                     c == '-' && !keepDash -> {}
-                    digits -> append(digitLookalikes[c] ?: c)
+                    lookalikes && c in digitLookalikes -> append(digitLookalikes.getValue(c))
+                    c.isLatinLetter() -> {}
                     else -> append(c)
                 }
             }
         }.trim('*')
     }
+
+    internal fun stripLetters(value: String): String = value.filterNot { it.isLatinLetter() }
+
+    private fun Char.isLatinLetter() = this in 'a'..'z' || this in 'A'..'Z'
 
     /** [value] occurs in [text] as a whole: no letter or digit right before or after it. */
     internal fun contains(text: String, value: String): Boolean {
